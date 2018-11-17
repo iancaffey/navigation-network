@@ -1,0 +1,4 @@
+rootProject.name = 'navigation-network'
+include 'immutables'
+include 'navigation-network'
+

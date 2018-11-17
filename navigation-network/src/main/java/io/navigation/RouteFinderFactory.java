@@ -51,30 +51,32 @@ public interface RouteFinderFactory {
 
         class RouteFinder implements io.navigation.RouteFinder {
             private final NetworkInfo networkInfo;
-            private final Map<Stop, Map<Station, Set<RouteOption>>> directRouteOptions;
+            private final Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions;
 
             private RouteFinder(@NonNull NetworkInfo networkInfo, @NonNull Set<Station> stations, @NonNull Set<Stop> stops) {
                 this.networkInfo = networkInfo;
-                this.directRouteOptions = stops.stream().collect(ImmutableMap.toImmutableMap(Function.identity(), stop -> stations.stream()
-                        //ignore stations which do not reach the stop directly
-                        .filter(station -> station.getDestinations().stream().anyMatch(option -> stop.getId().equals(option.getDestination())))
-                        //map each station to their direct route options to the stop
-                        .collect(ImmutableMap.toImmutableMap(
-                                Function.identity(),
-                                station -> station.getDestinations().stream()
-                                        .filter(option -> stop.getId().equals(option.getDestination()))
-                                        .collect(ImmutableSet.toImmutableSet())
-                        ))
+                Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+                this.directRouteOptions = stations.stream().collect(ImmutableMap.toImmutableMap(
+                        Function.identity(),
+                        station -> station.getDestinations().stream()
+                                .collect(ImmutableMap.toImmutableMap(
+                                        option -> stopsById.get(option.getDestination()),
+                                        ImmutableSet::of,
+                                        (left, right) -> ImmutableSet.<RouteOption>builder()
+                                                .addAll(left)
+                                                .addAll(right)
+                                                .build()
+                                ))
                 ));
             }
 
             @Override
             public Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {
-                Map<Station, Set<RouteOption>> directRoutesToStop = directRouteOptions.get(stop);
-                if (directRoutesToStop == null) {
-                    throw new IllegalArgumentException("Unable to find direct routes to " + stop + ".");
+                Map<Stop, Set<RouteOption>> directRoutesFromStation = directRouteOptions.get(station);
+                if (directRoutesFromStation == null) {
+                    throw new IllegalArgumentException("Unable to find direct routes from " + station + ".");
                 }
-                Set<RouteOption> directRouteOptions = directRoutesToStop.get(station);
+                Set<RouteOption> directRouteOptions = directRoutesFromStation.get(stop);
                 if (directRouteOptions == null) {
                     return Optional.empty();
                 }

@@ -2,6 +2,7 @@ package io.navigation;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -58,15 +59,11 @@ public interface RouteFinderFactory {
                 Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
                 this.directRouteOptions = stations.stream().collect(ImmutableMap.toImmutableMap(
                         Function.identity(),
-                        station -> station.getDestinations().stream()
-                                .collect(ImmutableMap.toImmutableMap(
-                                        option -> stopsById.get(option.getDestination()),
-                                        ImmutableSet::of,
-                                        (left, right) -> ImmutableSet.<RouteOption>builder()
-                                                .addAll(left)
-                                                .addAll(right)
-                                                .build()
-                                ))
+                        station -> station.getDestinations().stream().collect(ImmutableMap.toImmutableMap(
+                                option -> stopsById.get(option.getDestination()),
+                                ImmutableSet::of,
+                                Sets::intersection
+                        ))
                 ));
             }
 

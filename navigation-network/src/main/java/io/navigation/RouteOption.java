@@ -14,15 +14,19 @@ public interface RouteOption {
         return ImmutableRouteOption.builder();
     }
 
-    static RouteOption of(String destination, double fare) {
-        return ImmutableRouteOption.of(destination, fare);
+    static RouteOption of(String id, String destination, double fare) {
+        return ImmutableRouteOption.of(id, destination, fare);
     }
+
+    String getId();
 
     String getDestination();
 
     double getFare();
 
     interface Builder {
+        Builder setId(String id);
+
         Builder setDestination(String destination);
 
         Builder setFare(double fare);

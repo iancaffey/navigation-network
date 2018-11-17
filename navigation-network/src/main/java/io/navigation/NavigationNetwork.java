@@ -3,6 +3,7 @@ package io.navigation;
 import com.google.common.collect.ImmutableSet;
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
 import lombok.NonNull;
+import org.immutables.value.Value.Auxiliary;
 import org.immutables.value.Value.Derived;
 import org.immutables.value.Value.Immutable;
 
@@ -35,8 +36,10 @@ public interface NavigationNetwork {
 
     NetworkInfo getNetworkInfo();
 
+    @Auxiliary
     NetworkFinderFactory getNetworkFinderFactory();
 
+    @Auxiliary
     RouteFinderFactory getRouteFinderFactory();
 
     Set<Station> getStations();

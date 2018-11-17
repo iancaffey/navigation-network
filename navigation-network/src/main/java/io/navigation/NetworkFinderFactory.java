@@ -16,11 +16,44 @@ import java.util.stream.Stream;
 @Enclosing
 @ImmutableNavigationNetworkStyle
 public interface NetworkFinderFactory {
+    static FindAny findAny() {
+        return ImmutableNetworkFinderFactory.FindAny.of();
+    }
+
     static FindFirst findFirst() {
         return ImmutableNetworkFinderFactory.FindFirst.of();
     }
 
     NetworkFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops);
+
+    @Immutable
+    interface FindAny extends NetworkFinderFactory {
+        @Override
+        default NetworkFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
+            return new NetworkFinder(stations, stops);
+        }
+
+        class NetworkFinder extends AbstractNetworkFinder {
+            public NetworkFinder(Set<Station> stations, Set<Stop> stops) {
+                super(stations, stops);
+            }
+
+            @Override
+            public Optional<Station> findPreferredStation(Coordinate coordinate) {
+                return findAvailableStations(coordinate).findAny();
+            }
+
+            @Override
+            public Optional<Stop> findPreferredStop(Coordinate coordinate) {
+                return findAvailableStops(coordinate).findAny();
+            }
+
+            @Override
+            public String toString() {
+                return "FindAny";
+            }
+        }
+    }
 
     @Immutable
     interface FindFirst extends NetworkFinderFactory {

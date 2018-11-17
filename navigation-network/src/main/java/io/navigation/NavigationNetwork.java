@@ -56,16 +56,16 @@ public interface NavigationNetwork {
         return getRouteFinderFactory().create(getNetworkInfo(), getStations(), getStops());
     }
 
-    default Optional<Station> findNearestStation(@NonNull Coordinate coordinate) {
-        return getNetworkFinder().findNearestStation(coordinate);
+    default Optional<Station> findStation(@NonNull Coordinate coordinate) {
+        return getNetworkFinder().findStation(coordinate);
     }
 
     default Stream<Station> findReachableStations(@NonNull Coordinate coordinate) {
         return getNetworkFinder().findReachableStations(coordinate);
     }
 
-    default Optional<Stop> findNearestStop(@NonNull Coordinate coordinate) {
-        return getNetworkFinder().findNearestStop(coordinate);
+    default Optional<Stop> findStop(@NonNull Coordinate coordinate) {
+        return getNetworkFinder().findStop(coordinate);
     }
 
     default Stream<Stop> findReachableStops(@NonNull Coordinate coordinate) {
@@ -76,9 +76,9 @@ public interface NavigationNetwork {
         return getRouteFinder().findRoute(station, stop);
     }
 
-    default Optional<Route> findNearestRoute(@NonNull Coordinate start, @NonNull Coordinate destination) {
-        Station station = findNearestStation(start).orElseThrow(() -> new UnreachableStationException(start, this));
-        Stop stop = findNearestStop(destination).orElseThrow(() -> new UnreachableStopException(start, this));
+    default Optional<Route> findRoute(@NonNull Coordinate start, @NonNull Coordinate destination) {
+        Station station = findStation(start).orElseThrow(() -> new UnreachableStationException(start, this));
+        Stop stop = findStop(destination).orElseThrow(() -> new UnreachableStopException(start, this));
         return findRoute(station, stop);
     }
 

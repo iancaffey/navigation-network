@@ -35,7 +35,7 @@ public interface NetworkFinderFactory {
             private final Set<Stop> stops;
 
             @Override
-            public Optional<Station> findNearestStation(Coordinate coordinate) {
+            public Optional<Station> findStation(Coordinate coordinate) {
                 return findReachableStations(coordinate).findFirst();
             }
 
@@ -45,7 +45,7 @@ public interface NetworkFinderFactory {
             }
 
             @Override
-            public Optional<Stop> findNearestStop(Coordinate coordinate) {
+            public Optional<Stop> findStop(Coordinate coordinate) {
                 return findReachableStops(coordinate).findFirst();
             }
 

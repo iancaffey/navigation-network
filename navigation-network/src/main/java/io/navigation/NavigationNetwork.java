@@ -56,38 +56,38 @@ public interface NavigationNetwork {
         return getRouteFinderFactory().create(getNetworkInfo(), getStations(), getStops());
     }
 
-    default Optional<Station> findStation(@NonNull Coordinate coordinate) {
-        return getNetworkFinder().findStation(coordinate);
+    default Optional<Station> findPreferredStation(@NonNull Coordinate coordinate) {
+        return getNetworkFinder().findPreferredStation(coordinate);
     }
 
-    default Stream<Station> findReachableStations(@NonNull Coordinate coordinate) {
-        return getNetworkFinder().findReachableStations(coordinate);
+    default Stream<Station> findAvailableStations(@NonNull Coordinate coordinate) {
+        return getNetworkFinder().findAvailableStations(coordinate);
     }
 
-    default Optional<Stop> findStop(@NonNull Coordinate coordinate) {
-        return getNetworkFinder().findStop(coordinate);
+    default Optional<Stop> findPreferredStop(@NonNull Coordinate coordinate) {
+        return getNetworkFinder().findPreferredStop(coordinate);
     }
 
-    default Stream<Stop> findReachableStops(@NonNull Coordinate coordinate) {
-        return getNetworkFinder().findReachableStops(coordinate);
+    default Stream<Stop> findAvailableStops(@NonNull Coordinate coordinate) {
+        return getNetworkFinder().findAvailableStops(coordinate);
     }
 
     default Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {
         return getRouteFinder().findRoute(station, stop);
     }
 
-    default Optional<Route> findRoute(@NonNull Coordinate start, @NonNull Coordinate destination) {
-        Station station = findStation(start).orElseThrow(() -> new UnreachableStationException(start, this));
-        Stop stop = findStop(destination).orElseThrow(() -> new UnreachableStopException(start, this));
+    default Optional<Route> findPreferredRoute(@NonNull Coordinate start, @NonNull Coordinate destination) {
+        Station station = findPreferredStation(start).orElseThrow(() -> new UnreachableStationException(start, this));
+        Stop stop = findPreferredStop(destination).orElseThrow(() -> new UnreachableStopException(start, this));
         return findRoute(station, stop);
     }
 
-    default Stream<Route> findRoutes(@NonNull Coordinate start, @NonNull Coordinate destination) {
-        Set<Station> stations = findReachableStations(start).collect(ImmutableSet.toImmutableSet());
+    default Stream<Route> findAvailableRoutes(@NonNull Coordinate start, @NonNull Coordinate destination) {
+        Set<Station> stations = findAvailableStations(start).collect(ImmutableSet.toImmutableSet());
         if (stations.isEmpty()) {
             throw new UnreachableStationException(start, this);
         }
-        Set<Stop> stops = findReachableStops(destination).collect(ImmutableSet.toImmutableSet());
+        Set<Stop> stops = findAvailableStops(destination).collect(ImmutableSet.toImmutableSet());
         if (stops.isEmpty()) {
             throw new UnreachableStationException(destination, this);
         }

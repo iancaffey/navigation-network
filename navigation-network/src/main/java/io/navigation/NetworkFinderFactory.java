@@ -35,22 +35,22 @@ public interface NetworkFinderFactory {
             private final Set<Stop> stops;
 
             @Override
-            public Optional<Station> findStation(Coordinate coordinate) {
-                return findReachableStations(coordinate).findFirst();
+            public Optional<Station> findPreferredStation(Coordinate coordinate) {
+                return findAvailableStations(coordinate).findFirst();
             }
 
             @Override
-            public Stream<Station> findReachableStations(Coordinate coordinate) {
+            public Stream<Station> findAvailableStations(Coordinate coordinate) {
                 return stations.stream().filter(station -> station.getServiceArea().canService(coordinate));
             }
 
             @Override
-            public Optional<Stop> findStop(Coordinate coordinate) {
-                return findReachableStops(coordinate).findFirst();
+            public Optional<Stop> findPreferredStop(Coordinate coordinate) {
+                return findAvailableStops(coordinate).findFirst();
             }
 
             @Override
-            public Stream<Stop> findReachableStops(Coordinate coordinate) {
+            public Stream<Stop> findAvailableStops(Coordinate coordinate) {
                 return stops.stream().filter(station -> station.getServiceArea().canService(coordinate));
             }
 

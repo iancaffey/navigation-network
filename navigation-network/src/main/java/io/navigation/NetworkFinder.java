@@ -8,11 +8,11 @@ import java.util.stream.Stream;
  * @since 1.0
  */
 public interface NetworkFinder {
-    Optional<Station> findStation(Coordinate coordinate);
+    Optional<Station> findPreferredStation(Coordinate coordinate);
 
-    Stream<Station> findReachableStations(Coordinate coordinate);
+    Stream<Station> findAvailableStations(Coordinate coordinate);
 
-    Optional<Stop> findStop(Coordinate coordinate);
+    Optional<Stop> findPreferredStop(Coordinate coordinate);
 
-    Stream<Stop> findReachableStops(Coordinate coordinate);
+    Stream<Stop> findAvailableStops(Coordinate coordinate);
 }

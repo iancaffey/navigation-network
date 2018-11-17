@@ -21,6 +21,10 @@ import java.util.function.Function;
 @Enclosing
 @ImmutableNavigationNetworkStyle
 public interface RouteFinderFactory {
+    static Cached cached(RouteFinderFactory factory, long timeToLive, TimeUnit timeUnit) {
+        return ImmutableRouteFinderFactory.Cached.of(factory, timeToLive, timeUnit);
+    }
+
     static Direct direct() {
         return ImmutableRouteFinderFactory.Direct.of();
     }
@@ -42,6 +46,52 @@ public interface RouteFinderFactory {
     }
 
     RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops);
+
+    @Immutable
+    interface Cached extends RouteFinderFactory {
+        RouteFinderFactory getRouteFinderFactory();
+
+        long getTimeToLive();
+
+        TimeUnit getTimeUnit();
+
+        @Override
+        default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
+            io.navigation.RouteFinder delegate = getRouteFinderFactory().create(networkInfo, stations, stops);
+            return new RouteFinder(delegate, getTimeUnit().toNanos(getTimeToLive()));
+        }
+
+        @RequiredArgsConstructor
+        class RouteFinder implements io.navigation.RouteFinder {
+            private final Map<CacheKey, Route> routes = new ConcurrentHashMap<>(); //storing an Optional/long pair would allow caching empty responses from the delegate
+            private final io.navigation.RouteFinder delegate;
+            private final long timeToLive;
+
+            @Override
+            public Optional<Route> findRoute(Station station, Stop stop) {
+                long time = System.nanoTime();
+                CacheKey key = CacheKey.of(station.getId(), stop.getId());
+                Route cachedRoute = routes.get(key);
+                if (cachedRoute != null && (time - cachedRoute.getRouteInfo().getCreationTime().getNano()) <= timeToLive) {
+                    return Optional.of(cachedRoute);
+                }
+                Optional<Route> route = delegate.findRoute(station, stop);
+                route.ifPresent(r -> routes.put(key, r));
+                return route;
+            }
+
+            @Immutable
+            interface CacheKey {
+                static CacheKey of(String station, String stop) {
+                    return ImmutableRouteFinderFactory.CacheKey.of(station, stop);
+                }
+
+                String getStation();
+
+                String getStop();
+            }
+        }
+    }
 
     @Immutable
     interface Direct extends RouteFinderFactory {

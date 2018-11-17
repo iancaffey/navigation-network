@@ -85,6 +85,11 @@ public interface RouteFinderFactory {
                         .setStop(stop)
                         .build());
             }
+
+            @Override
+            public String toString() {
+                return "Direct";
+            }
         }
     }
 
@@ -110,6 +115,11 @@ public interface RouteFinderFactory {
             public Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {
                 //TODO: Do regular Dijkstra's across the Station network to find route with minimum fare to the stop
                 return Optional.empty();
+            }
+
+            @Override
+            public String toString() {
+                return "Dijkstra";
             }
         }
     }
@@ -159,6 +169,11 @@ public interface RouteFinderFactory {
                     workers.parallelStream().forEach(worker -> worker.cancel(true));
                 }
                 return route;
+            }
+
+            @Override
+            public String toString() {
+                return "Competing" + routeFinders;
             }
         }
     }

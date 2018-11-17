@@ -53,6 +53,11 @@ public interface NetworkFinderFactory {
             public Stream<Stop> findReachableStops(Coordinate coordinate) {
                 return stops.stream().filter(station -> station.getServiceArea().canService(coordinate));
             }
+
+            @Override
+            public String toString() {
+                return "FindFirst";
+            }
         }
     }
 }

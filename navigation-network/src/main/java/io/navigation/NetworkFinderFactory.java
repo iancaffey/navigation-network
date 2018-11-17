@@ -29,19 +29,14 @@ public interface NetworkFinderFactory {
             return new NetworkFinder(stations, stops);
         }
 
-        @RequiredArgsConstructor
-        class NetworkFinder implements io.navigation.NetworkFinder {
-            private final Set<Station> stations;
-            private final Set<Stop> stops;
+        class NetworkFinder extends AbstractNetworkFinder {
+            public NetworkFinder(Set<Station> stations, Set<Stop> stops) {
+                super(stations, stops);
+            }
 
             @Override
             public Optional<Station> findPreferredStation(Coordinate coordinate) {
                 return findAvailableStations(coordinate).findFirst();
-            }
-
-            @Override
-            public Stream<Station> findAvailableStations(Coordinate coordinate) {
-                return stations.stream().filter(station -> station.getServiceArea().canService(coordinate));
             }
 
             @Override
@@ -50,14 +45,25 @@ public interface NetworkFinderFactory {
             }
 
             @Override
-            public Stream<Stop> findAvailableStops(Coordinate coordinate) {
-                return stops.stream().filter(station -> station.getServiceArea().canService(coordinate));
-            }
-
-            @Override
             public String toString() {
                 return "FindFirst";
             }
+        }
+    }
+
+    @RequiredArgsConstructor
+    abstract class AbstractNetworkFinder implements NetworkFinder {
+        private final Set<Station> stations;
+        private final Set<Stop> stops;
+
+        @Override
+        public Stream<Station> findAvailableStations(Coordinate coordinate) {
+            return stations.stream().filter(station -> station.getServiceArea().canService(coordinate));
+        }
+
+        @Override
+        public Stream<Stop> findAvailableStops(Coordinate coordinate) {
+            return stops.stream().filter(station -> station.getServiceArea().canService(coordinate));
         }
     }
 }

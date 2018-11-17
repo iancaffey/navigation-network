@@ -58,7 +58,7 @@ public interface RouteFinderFactory {
         @Override
         default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
             io.navigation.RouteFinder delegate = getRouteFinderFactory().create(networkInfo, stations, stops);
-            return new RouteFinder(delegate, getTimeUnit().toNanos(getTimeToLive()));
+            return new RouteFinder(delegate, getTimeUnit().toMillis(getTimeToLive()));
         }
 
         @RequiredArgsConstructor
@@ -69,10 +69,10 @@ public interface RouteFinderFactory {
 
             @Override
             public Optional<Route> findRoute(Station station, Stop stop) {
-                long time = System.nanoTime();
+                long time = System.currentTimeMillis();
                 CacheKey key = CacheKey.of(station.getId(), stop.getId());
                 Route cachedRoute = routes.get(key);
-                if (cachedRoute != null && (time - cachedRoute.getRouteInfo().getCreationTime().getNano()) <= timeToLive) {
+                if (cachedRoute != null && (time - cachedRoute.getRouteInfo().getCreationTime().toEpochMilli()) <= timeToLive) {
                     return Optional.of(cachedRoute);
                 }
                 Optional<Route> route = delegate.findRoute(station, stop);

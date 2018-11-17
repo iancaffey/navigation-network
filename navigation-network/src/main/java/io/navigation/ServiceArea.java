@@ -22,6 +22,10 @@ public interface ServiceArea {
         return ImmutableServiceArea.Empty.of();
     }
 
+    static Outside outside(ServiceArea serviceArea) {
+        return ImmutableServiceArea.Outside.of(serviceArea);
+    }
+
     static Intersection intersection(ServiceArea... serviceAreas) {
         return ImmutableServiceArea.Intersection.of(ImmutableSet.copyOf(serviceAreas));
     }
@@ -61,6 +65,16 @@ public interface ServiceArea {
         @Override
         default boolean canService(Coordinate coordinate) {
             return false;
+        }
+    }
+
+    @Immutable
+    interface Outside extends ServiceArea {
+        ServiceArea getServiceArea();
+
+        @Override
+        default boolean canService(Coordinate coordinate) {
+            return !getServiceArea().canService(coordinate);
         }
     }
 

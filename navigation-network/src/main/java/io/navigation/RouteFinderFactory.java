@@ -90,6 +90,11 @@ public interface RouteFinderFactory {
 
                 String getStop();
             }
+
+            @Override
+            public String toString() {
+                return "Cached{" + delegate + "}";
+            }
         }
     }
 

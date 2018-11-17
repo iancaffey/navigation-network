@@ -47,25 +47,22 @@ public interface RouteFinderFactory {
     interface Direct extends RouteFinderFactory {
         @Override
         default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            return new RouteFinder(networkInfo, stations, stops);
+            Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+            Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions = stations.stream().collect(ImmutableMap.toImmutableMap(
+                    Function.identity(),
+                    station -> station.getDestinations().stream().collect(ImmutableMap.toImmutableMap(
+                            option -> stopsById.get(option.getDestination()),
+                            ImmutableSet::of,
+                            Sets::intersection
+                    ))
+            ));
+            return new RouteFinder(networkInfo, directRouteOptions);
         }
 
+        @RequiredArgsConstructor
         class RouteFinder implements io.navigation.RouteFinder {
             private final NetworkInfo networkInfo;
             private final Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions;
-
-            private RouteFinder(@NonNull NetworkInfo networkInfo, @NonNull Set<Station> stations, @NonNull Set<Stop> stops) {
-                this.networkInfo = networkInfo;
-                Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-                this.directRouteOptions = stations.stream().collect(ImmutableMap.toImmutableMap(
-                        Function.identity(),
-                        station -> station.getDestinations().stream().collect(ImmutableMap.toImmutableMap(
-                                option -> stopsById.get(option.getDestination()),
-                                ImmutableSet::of,
-                                Sets::intersection
-                        ))
-                ));
-            }
 
             @Override
             public Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {
@@ -97,19 +94,16 @@ public interface RouteFinderFactory {
     interface Dijkstra extends RouteFinderFactory {
         @Override
         default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            return new RouteFinder(networkInfo, stations, stops);
+            Map<String, Station> stationsById = stations.stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
+            Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+            return new RouteFinder(networkInfo, stationsById, stopsById);
         }
 
+        @RequiredArgsConstructor
         class RouteFinder implements io.navigation.RouteFinder {
             private final NetworkInfo networkInfo;
             private final Map<String, Station> stationsById;
             private final Map<String, Stop> stopsById;
-
-            public RouteFinder(@NonNull NetworkInfo networkInfo, @NonNull Set<Station> stations, @NonNull Set<Stop> stops) {
-                this.networkInfo = networkInfo;
-                this.stationsById = stations.stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
-                this.stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-            }
 
             @Override
             public Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {

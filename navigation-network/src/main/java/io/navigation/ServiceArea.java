@@ -21,23 +21,23 @@ public interface ServiceArea<C> {
         return ImmutableServiceArea.Empty.<C>builder().build();
     }
 
-    static <C> Outside<C> outside(ServiceArea<C> serviceArea) {
+    static <C> Outside<C> outside(ServiceArea<? super C> serviceArea) {
         return ImmutableServiceArea.Outside.of(serviceArea);
     }
 
-    static <C> Intersection<C> intersection(Set<ServiceArea<C>> serviceAreas) {
+    static <C> Intersection<C> intersection(Set<ServiceArea<? super C>> serviceAreas) {
         return ImmutableServiceArea.Intersection.of(serviceAreas);
     }
 
-    static <C> Intersection<C> intersection(Iterable<? extends ServiceArea<C>> serviceAreas) {
+    static <C> Intersection<C> intersection(Iterable<? extends ServiceArea<? super C>> serviceAreas) {
         return ImmutableServiceArea.Intersection.of(serviceAreas);
     }
 
-    static <C> Union<C> union(Set<ServiceArea<C>> serviceAreas) {
+    static <C> Union<C> union(Set<ServiceArea<? super C>> serviceAreas) {
         return ImmutableServiceArea.Union.of(serviceAreas);
     }
 
-    static <C> Union<C> union(Iterable<? extends ServiceArea<C>> serviceAreas) {
+    static <C> Union<C> union(Iterable<? extends ServiceArea<? super C>> serviceAreas) {
         return ImmutableServiceArea.Union.of(serviceAreas);
     }
 
@@ -61,7 +61,7 @@ public interface ServiceArea<C> {
 
     @Immutable
     interface Outside<C> extends ServiceArea<C> {
-        ServiceArea<C> getServiceArea();
+        ServiceArea<? super C> getServiceArea();
 
         @Override
         default boolean contains(C coordinate) {
@@ -71,7 +71,7 @@ public interface ServiceArea<C> {
 
     @Immutable
     interface Intersection<C> extends ServiceArea<C> {
-        Set<ServiceArea<C>> getServiceAreas();
+        Set<ServiceArea<? super C>> getServiceAreas();
 
         @Override
         default boolean contains(C coordinate) {
@@ -81,7 +81,7 @@ public interface ServiceArea<C> {
 
     @Immutable
     interface Union<C> extends ServiceArea<C> {
-        Set<ServiceArea<C>> getServiceAreas();
+        Set<ServiceArea<? super C>> getServiceAreas();
 
         @Override
         default boolean contains(C coordinate) {

@@ -1,6 +1,5 @@
 package io.navigation;
 
-import com.google.common.collect.ImmutableSet;
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
 import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
@@ -13,88 +12,80 @@ import java.util.Set;
  */
 @Enclosing
 @ImmutableNavigationNetworkStyle
-public interface ServiceArea {
-    static Global global() {
-        return ImmutableServiceArea.Global.of();
+public interface ServiceArea<C> {
+    static <C> Global<C> global() {
+        return ImmutableServiceArea.Global.<C>builder().build();
     }
 
-    static Empty empty() {
-        return ImmutableServiceArea.Empty.of();
+    static <C> Empty<C> empty() {
+        return ImmutableServiceArea.Empty.<C>builder().build();
     }
 
-    static Outside outside(ServiceArea serviceArea) {
+    static <C> Outside<C> outside(ServiceArea<C> serviceArea) {
         return ImmutableServiceArea.Outside.of(serviceArea);
     }
 
-    static Intersection intersection(ServiceArea... serviceAreas) {
-        return ImmutableServiceArea.Intersection.of(ImmutableSet.copyOf(serviceAreas));
-    }
-
-    static Intersection intersection(Set<ServiceArea> serviceAreas) {
+    static <C> Intersection<C> intersection(Set<ServiceArea<C>> serviceAreas) {
         return ImmutableServiceArea.Intersection.of(serviceAreas);
     }
 
-    static Intersection intersection(Iterable<? extends ServiceArea> serviceAreas) {
+    static <C> Intersection<C> intersection(Iterable<? extends ServiceArea<C>> serviceAreas) {
         return ImmutableServiceArea.Intersection.of(serviceAreas);
     }
 
-    static Union union(ServiceArea... serviceAreas) {
-        return ImmutableServiceArea.Union.of(ImmutableSet.copyOf(serviceAreas));
-    }
-
-    static Union union(Set<ServiceArea> serviceAreas) {
+    static <C> Union<C> union(Set<ServiceArea<C>> serviceAreas) {
         return ImmutableServiceArea.Union.of(serviceAreas);
     }
 
-    static Union union(Iterable<? extends ServiceArea> serviceAreas) {
+    static <C> Union<C> union(Iterable<? extends ServiceArea<C>> serviceAreas) {
         return ImmutableServiceArea.Union.of(serviceAreas);
     }
 
-    boolean canService(Coordinate coordinate);
+    boolean contains(C coordinate);
 
     @Immutable
-    interface Global extends ServiceArea {
+    interface Global<C> extends ServiceArea<C> {
         @Override
-        default boolean canService(Coordinate coordinate) {
+        default boolean contains(C coordinate) {
             return true;
         }
     }
 
     @Immutable
-    interface Empty extends ServiceArea {
+    interface Empty<C> extends ServiceArea<C> {
         @Override
-        default boolean canService(Coordinate coordinate) {
+        default boolean contains(C coordinate) {
             return false;
         }
     }
 
     @Immutable
-    interface Outside extends ServiceArea {
-        ServiceArea getServiceArea();
+    interface Outside<C> extends ServiceArea<C> {
+        ServiceArea<C> getServiceArea();
 
         @Override
-        default boolean canService(Coordinate coordinate) {
-            return !getServiceArea().canService(coordinate);
+        default boolean contains(C coordinate) {
+            return !getServiceArea().contains(coordinate);
         }
     }
 
     @Immutable
-    interface Intersection extends ServiceArea {
-        Set<ServiceArea> getServiceAreas();
+    interface Intersection<C> extends ServiceArea<C> {
+        Set<ServiceArea<C>> getServiceAreas();
 
         @Override
-        default boolean canService(Coordinate coordinate) {
-            return getServiceAreas().stream().allMatch(serviceArea -> serviceArea.canService(coordinate));
+        default boolean contains(C coordinate) {
+            return getServiceAreas().stream().allMatch(serviceArea -> serviceArea.contains(coordinate));
         }
     }
 
     @Immutable
-    interface Union extends ServiceArea {
-        Set<ServiceArea> getServiceAreas();
+    interface Union<C> extends ServiceArea<C> {
+        Set<ServiceArea<C>> getServiceAreas();
 
         @Override
-        default boolean canService(Coordinate coordinate) {
-            return getServiceAreas().stream().anyMatch(serviceArea -> serviceArea.canService(coordinate));
+        default boolean contains(C coordinate) {
+            return getServiceAreas().stream().anyMatch(serviceArea -> serviceArea.contains(coordinate));
         }
     }
 }

@@ -7,12 +7,12 @@ import java.util.stream.Stream;
  * @author Ian Caffey
  * @since 1.0
  */
-public interface NetworkFinder {
-    Optional<Station> findPreferredStation(Coordinate coordinate);
+public interface NetworkFinder<C> {
+    Optional<Station> findPreferredStation(C coordinate);
 
-    Stream<Station> findAvailableStations(Coordinate coordinate);
+    Stream<Station> findAvailableStations(C coordinate);
 
-    Optional<Stop> findPreferredStop(Coordinate coordinate);
+    Optional<Stop> findPreferredStop(C coordinate);
 
-    Stream<Stop> findAvailableStops(Coordinate coordinate);
+    Stream<Stop> findAvailableStops(C coordinate);
 }

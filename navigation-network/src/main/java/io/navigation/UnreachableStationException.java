@@ -9,7 +9,7 @@ import java.text.MessageFormat;
  * @since 1.0
  */
 public class UnreachableStationException extends UnreachableCoordinateException {
-    public UnreachableStationException(@NonNull Coordinate coordinate, @NonNull NavigationNetwork network) {
+    public UnreachableStationException(@NonNull Object coordinate, @NonNull NavigationNetwork network) {
         super(MessageFormat.format("Unable to find a station in the network {} (v.{} which services {}.",
                 network.getNetworkInfo().getName(), network.getNetworkInfo().getVersion(), coordinate),
                 coordinate, network);

@@ -15,36 +15,36 @@ import java.util.stream.Stream;
  */
 @Enclosing
 @ImmutableNavigationNetworkStyle
-public interface NetworkFinderFactory {
-    static FindAny findAny() {
-        return ImmutableNetworkFinderFactory.FindAny.of();
+public interface NetworkFinderFactory<C> {
+    static <C> FindAny<C> findAny() {
+        return ImmutableNetworkFinderFactory.FindAny.<C>builder().build();
     }
 
-    static FindFirst findFirst() {
-        return ImmutableNetworkFinderFactory.FindFirst.of();
+    static <C> FindFirst<C> findFirst() {
+        return ImmutableNetworkFinderFactory.FindFirst.<C>builder().build();
     }
 
-    NetworkFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops);
+    NetworkFinder<C> create(NetworkInfo networkInfo, NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops);
 
     @Immutable
-    interface FindAny extends NetworkFinderFactory {
+    interface FindAny<C> extends NetworkFinderFactory<C> {
         @Override
-        default NetworkFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            return new NetworkFinder(stations, stops);
+        default NetworkFinder<C> create(NetworkInfo networkInfo, NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
+            return new NetworkFinder<>(networkCoverage, stations, stops);
         }
 
-        class NetworkFinder extends AbstractNetworkFinder {
-            public NetworkFinder(Set<Station> stations, Set<Stop> stops) {
-                super(stations, stops);
+        class NetworkFinder<C> extends AbstractNetworkFinder<C> {
+            public NetworkFinder(NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
+                super(networkCoverage, stations, stops);
             }
 
             @Override
-            public Optional<Station> findPreferredStation(Coordinate coordinate) {
+            public Optional<Station> findPreferredStation(C coordinate) {
                 return findAvailableStations(coordinate).findAny();
             }
 
             @Override
-            public Optional<Stop> findPreferredStop(Coordinate coordinate) {
+            public Optional<Stop> findPreferredStop(C coordinate) {
                 return findAvailableStops(coordinate).findAny();
             }
 
@@ -56,24 +56,24 @@ public interface NetworkFinderFactory {
     }
 
     @Immutable
-    interface FindFirst extends NetworkFinderFactory {
+    interface FindFirst<C> extends NetworkFinderFactory<C> {
         @Override
-        default NetworkFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            return new NetworkFinder(stations, stops);
+        default NetworkFinder<C> create(NetworkInfo networkInfo, NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
+            return new NetworkFinder<>(networkCoverage, stations, stops);
         }
 
-        class NetworkFinder extends AbstractNetworkFinder {
-            public NetworkFinder(Set<Station> stations, Set<Stop> stops) {
-                super(stations, stops);
+        class NetworkFinder<C> extends AbstractNetworkFinder<C> {
+            public NetworkFinder(NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
+                super(networkCoverage, stations, stops);
             }
 
             @Override
-            public Optional<Station> findPreferredStation(Coordinate coordinate) {
+            public Optional<Station> findPreferredStation(C coordinate) {
                 return findAvailableStations(coordinate).findFirst();
             }
 
             @Override
-            public Optional<Stop> findPreferredStop(Coordinate coordinate) {
+            public Optional<Stop> findPreferredStop(C coordinate) {
                 return findAvailableStops(coordinate).findFirst();
             }
 
@@ -85,18 +85,19 @@ public interface NetworkFinderFactory {
     }
 
     @RequiredArgsConstructor
-    abstract class AbstractNetworkFinder implements NetworkFinder {
+    abstract class AbstractNetworkFinder<C> implements NetworkFinder<C> {
+        private final NetworkCoverage<C> networkCoverage;
         private final Set<Station> stations;
         private final Set<Stop> stops;
 
         @Override
-        public Stream<Station> findAvailableStations(Coordinate coordinate) {
-            return stations.stream().filter(station -> station.getServiceArea().canService(coordinate));
+        public Stream<Station> findAvailableStations(C coordinate) {
+            return stations.stream().filter(station -> networkCoverage.contains(station, coordinate));
         }
 
         @Override
-        public Stream<Stop> findAvailableStops(Coordinate coordinate) {
-            return stops.stream().filter(station -> station.getServiceArea().canService(coordinate));
+        public Stream<Stop> findAvailableStops(C coordinate) {
+            return stops.stream().filter(stop -> networkCoverage.contains(stop, coordinate));
         }
     }
 }

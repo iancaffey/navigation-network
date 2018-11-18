@@ -6,6 +6,4 @@ package io.navigation;
  */
 public interface NetworkNode {
     String getId();
-
-    ServiceArea getServiceArea();
 }

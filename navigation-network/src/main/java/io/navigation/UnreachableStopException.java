@@ -9,7 +9,7 @@ import java.text.MessageFormat;
  * @since 1.0
  */
 public class UnreachableStopException extends UnreachableCoordinateException {
-    public UnreachableStopException(@NonNull Coordinate coordinate, @NonNull NavigationNetwork network) {
+    public UnreachableStopException(@NonNull Object coordinate, @NonNull NavigationNetwork network) {
         super(MessageFormat.format("Unable to find a stop in the network {}/{} which services {}.",
                 network.getNetworkInfo().getName(), network.getNetworkInfo().getVersion(), coordinate),
                 coordinate, network);

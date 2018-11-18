@@ -8,10 +8,10 @@ import lombok.Getter;
  */
 @Getter
 public class UnreachableCoordinateException extends RuntimeException {
-    private final Coordinate coordinate;
+    private final Object coordinate;
     private final NetworkInfo networkInfo;
 
-    public UnreachableCoordinateException(String message, Coordinate coordinate, NavigationNetwork network) {
+    public UnreachableCoordinateException(String message, Object coordinate, NavigationNetwork network) {
         super(message);
         this.coordinate = coordinate;
         this.networkInfo = network.getNetworkInfo();

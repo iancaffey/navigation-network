@@ -14,14 +14,12 @@ public interface Stop extends NetworkNode {
         return ImmutableStop.builder();
     }
 
-    static Stop of(String id, ServiceArea serviceArea) {
-        return ImmutableStop.of(id, serviceArea);
+    static Stop of(String id) {
+        return ImmutableStop.of(id);
     }
 
     interface Builder {
         Builder setId(String id);
-
-        Builder setServiceArea(ServiceArea serviceArea);
 
         Stop build();
     }

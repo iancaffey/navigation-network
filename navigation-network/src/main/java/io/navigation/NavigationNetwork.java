@@ -17,27 +17,17 @@ import java.util.stream.Stream;
  */
 @Immutable
 @ImmutableNavigationNetworkStyle
-public interface NavigationNetwork {
-    static Builder builder() {
+public interface NavigationNetwork<C> {
+    static <C> Builder<C> builder() {
         return ImmutableNavigationNetwork.builder();
-    }
-
-    static NavigationNetwork of(NetworkInfo networkInfo,
-                                NetworkFinderFactory networkFinderFactory, RouteFinderFactory routeFinderFactory,
-                                Set<Station> stations, Set<Stop> stops) {
-        return ImmutableNavigationNetwork.of(networkInfo, networkFinderFactory, routeFinderFactory, stations, stops);
-    }
-
-    static NavigationNetwork of(NetworkInfo networkInfo,
-                                NetworkFinderFactory networkFinderFactory, RouteFinderFactory routeFinderFactory,
-                                Iterable<? extends Station> stations, Iterable<? extends Stop> stops) {
-        return ImmutableNavigationNetwork.of(networkInfo, networkFinderFactory, routeFinderFactory, stations, stops);
     }
 
     NetworkInfo getNetworkInfo();
 
+    NetworkCoverage<C> getNetworkCoverage();
+
     @Auxiliary
-    NetworkFinderFactory getNetworkFinderFactory();
+    NetworkFinderFactory<C> getNetworkFinderFactory();
 
     @Auxiliary
     RouteFinderFactory getRouteFinderFactory();
@@ -47,8 +37,8 @@ public interface NavigationNetwork {
     Set<Stop> getStops();
 
     @Derived
-    default NetworkFinder getNetworkFinder() {
-        return getNetworkFinderFactory().create(getNetworkInfo(), getStations(), getStops());
+    default NetworkFinder<C> getNetworkFinder() {
+        return getNetworkFinderFactory().create(getNetworkInfo(), getNetworkCoverage(), getStations(), getStops());
     }
 
     @Derived
@@ -56,19 +46,19 @@ public interface NavigationNetwork {
         return getRouteFinderFactory().create(getNetworkInfo(), getStations(), getStops());
     }
 
-    default Optional<Station> findPreferredStation(@NonNull Coordinate coordinate) {
+    default Optional<Station> findPreferredStation(@NonNull C coordinate) {
         return getNetworkFinder().findPreferredStation(coordinate);
     }
 
-    default Stream<Station> findAvailableStations(@NonNull Coordinate coordinate) {
+    default Stream<Station> findAvailableStations(@NonNull C coordinate) {
         return getNetworkFinder().findAvailableStations(coordinate);
     }
 
-    default Optional<Stop> findPreferredStop(@NonNull Coordinate coordinate) {
+    default Optional<Stop> findPreferredStop(@NonNull C coordinate) {
         return getNetworkFinder().findPreferredStop(coordinate);
     }
 
-    default Stream<Stop> findAvailableStops(@NonNull Coordinate coordinate) {
+    default Stream<Stop> findAvailableStops(@NonNull C coordinate) {
         return getNetworkFinder().findAvailableStops(coordinate);
     }
 
@@ -76,13 +66,13 @@ public interface NavigationNetwork {
         return getRouteFinder().findRoute(station, stop);
     }
 
-    default Optional<Route> findPreferredRoute(@NonNull Coordinate start, @NonNull Coordinate destination) {
+    default Optional<Route> findPreferredRoute(@NonNull C start, @NonNull C destination) {
         Station station = findPreferredStation(start).orElseThrow(() -> new UnreachableStationException(start, this));
         Stop stop = findPreferredStop(destination).orElseThrow(() -> new UnreachableStopException(start, this));
         return findRoute(station, stop);
     }
 
-    default Stream<Route> findAvailableRoutes(@NonNull Coordinate start, @NonNull Coordinate destination) {
+    default Stream<Route> findAvailableRoutes(@NonNull C start, @NonNull C destination) {
         Set<Station> stations = findAvailableStations(start).collect(ImmutableSet.toImmutableSet());
         if (stations.isEmpty()) {
             throw new UnreachableStationException(start, this);
@@ -97,29 +87,31 @@ public interface NavigationNetwork {
                 .map(Optional::get);
     }
 
-    interface Builder {
-        Builder setNetworkInfo(NetworkInfo networkInfo);
+    interface Builder<C> {
+        Builder<C> setNetworkInfo(NetworkInfo networkInfo);
 
-        Builder setNetworkFinderFactory(NetworkFinderFactory networkFinderFactory);
+        Builder<C> setNetworkCoverage(NetworkCoverage<C> networkCoverage);
 
-        Builder setRouteFinderFactory(RouteFinderFactory routeFinderFactory);
+        Builder<C> setNetworkFinderFactory(NetworkFinderFactory<C> networkFinderFactory);
 
-        Builder addStation(Station station);
+        Builder<C> setRouteFinderFactory(RouteFinderFactory routeFinderFactory);
 
-        Builder addStations(Station... stations);
+        Builder<C> addStation(Station station);
 
-        Builder addAllStations(Iterable<? extends Station> stations);
+        Builder<C> addStations(Station... stations);
 
-        Builder setStations(Iterable<? extends Station> stations);
+        Builder<C> addAllStations(Iterable<? extends Station> stations);
 
-        Builder addStop(Stop stop);
+        Builder<C> setStations(Iterable<? extends Station> stations);
 
-        Builder addStops(Stop... stops);
+        Builder<C> addStop(Stop stop);
 
-        Builder addAllStops(Iterable<? extends Stop> stops);
+        Builder<C> addStops(Stop... stops);
 
-        Builder setStops(Iterable<? extends Stop> stops);
+        Builder<C> addAllStops(Iterable<? extends Stop> stops);
 
-        NavigationNetwork build();
+        Builder<C> setStops(Iterable<? extends Stop> stops);
+
+        NavigationNetwork<C> build();
     }
 }

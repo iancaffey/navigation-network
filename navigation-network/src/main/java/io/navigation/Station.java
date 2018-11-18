@@ -16,19 +16,16 @@ public interface Station extends NetworkNode {
         return ImmutableStation.builder();
     }
 
-    static Station of(String id, ServiceArea serviceArea, Set<RouteOption> connections, Set<RouteOption> destinations) {
-        return ImmutableStation.of(id, serviceArea, connections, destinations);
+    static Station of(String id, Set<RouteOption> connections, Set<RouteOption> destinations) {
+        return ImmutableStation.of(id, connections, destinations);
     }
 
-    static Station of(String id, ServiceArea serviceArea, Iterable<? extends RouteOption> connections, Iterable<? extends RouteOption> destinations) {
-        return ImmutableStation.of(id, serviceArea, connections, destinations);
+    static Station of(String id, Iterable<? extends RouteOption> connections, Iterable<? extends RouteOption> destinations) {
+        return ImmutableStation.of(id, connections, destinations);
     }
 
     @Override
     String getId();
-
-    @Override
-    ServiceArea getServiceArea();
 
     /**
      * Represents the set of {@link Station} which can be traveled to within the network.
@@ -50,8 +47,6 @@ public interface Station extends NetworkNode {
 
     interface Builder {
         Builder setId(String id);
-
-        Builder setServiceArea(ServiceArea serviceArea);
 
         Builder addConnection(RouteOption connection);
 

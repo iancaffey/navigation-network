@@ -45,7 +45,7 @@ public interface RouteFinderFactory {
         return ImmutableRouteFinderFactory.Competing.of(executor, routeFinderFactories);
     }
 
-    RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops);
+    RouteFinder create(NetworkView<?> networkView);
 
     @Immutable
     interface Cached extends RouteFinderFactory {
@@ -56,8 +56,8 @@ public interface RouteFinderFactory {
         TimeUnit getTimeUnit();
 
         @Override
-        default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            io.navigation.RouteFinder delegate = getRouteFinderFactory().create(networkInfo, stations, stops);
+        default RouteFinder create(NetworkView<?> networkView) {
+            io.navigation.RouteFinder delegate = getRouteFinderFactory().create(networkView);
             return new RouteFinder(delegate, getTimeUnit().toMillis(getTimeToLive()));
         }
 
@@ -80,6 +80,11 @@ public interface RouteFinderFactory {
                 return route;
             }
 
+            @Override
+            public String toString() {
+                return "Cached{" + delegate + "}";
+            }
+
             @Immutable
             interface CacheKey {
                 static CacheKey of(String station, String stop) {
@@ -90,20 +95,15 @@ public interface RouteFinderFactory {
 
                 String getStop();
             }
-
-            @Override
-            public String toString() {
-                return "Cached{" + delegate + "}";
-            }
         }
     }
 
     @Immutable
     interface Direct extends RouteFinderFactory {
         @Override
-        default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-            Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions = stations.stream().collect(ImmutableMap.toImmutableMap(
+        default RouteFinder create(NetworkView<?> networkView) {
+            Map<String, Stop> stopsById = networkView.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+            Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions = networkView.getStations().stream().collect(ImmutableMap.toImmutableMap(
                     Function.identity(),
                     station -> station.getDestinations().stream().collect(ImmutableMap.toImmutableMap(
                             option -> stopsById.get(option.getDestination()),
@@ -111,7 +111,7 @@ public interface RouteFinderFactory {
                             Sets::intersection
                     ))
             ));
-            return new RouteFinder(networkInfo, directRouteOptions);
+            return new RouteFinder(networkView.getNetworkInfo(), directRouteOptions);
         }
 
         @RequiredArgsConstructor
@@ -148,10 +148,10 @@ public interface RouteFinderFactory {
     @Immutable
     interface Dijkstra extends RouteFinderFactory {
         @Override
-        default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
-            Map<String, Station> stationsById = stations.stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
-            Map<String, Stop> stopsById = stops.stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-            return new RouteFinder(networkInfo, stationsById, stopsById);
+        default RouteFinder create(NetworkView<?> networkView) {
+            Map<String, Station> stationsById = networkView.getStations().stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
+            Map<String, Stop> stopsById = networkView.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+            return new RouteFinder(networkView.getNetworkInfo(), stationsById, stopsById);
         }
 
         @RequiredArgsConstructor
@@ -180,9 +180,9 @@ public interface RouteFinderFactory {
         Set<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
-        default RouteFinder create(NetworkInfo networkInfo, Set<Station> stations, Set<Stop> stops) {
+        default RouteFinder create(NetworkView<?> networkView) {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
-                    .map(factory -> factory.create(networkInfo, stations, stops))
+                    .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
             return new RouteFinder(getExecutor(), routeFinders);
         }

@@ -6,7 +6,6 @@ import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -24,18 +23,18 @@ public interface NetworkFinderFactory<C> {
         return ImmutableNetworkFinderFactory.FindFirst.<C>builder().build();
     }
 
-    NetworkFinder<C> create(NetworkInfo networkInfo, NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops);
+    NetworkFinder<C> create(NetworkView<C> networkView);
 
     @Immutable
     interface FindAny<C> extends NetworkFinderFactory<C> {
         @Override
-        default NetworkFinder<C> create(NetworkInfo networkInfo, NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
-            return new NetworkFinder<>(networkCoverage, stations, stops);
+        default NetworkFinder<C> create(NetworkView<C> networkView) {
+            return new NetworkFinder<>(networkView);
         }
 
         class NetworkFinder<C> extends AbstractNetworkFinder<C> {
-            public NetworkFinder(NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
-                super(networkCoverage, stations, stops);
+            public NetworkFinder(NetworkView<C> networkView) {
+                super(networkView);
             }
 
             @Override
@@ -58,13 +57,13 @@ public interface NetworkFinderFactory<C> {
     @Immutable
     interface FindFirst<C> extends NetworkFinderFactory<C> {
         @Override
-        default NetworkFinder<C> create(NetworkInfo networkInfo, NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
-            return new NetworkFinder<>(networkCoverage, stations, stops);
+        default NetworkFinder<C> create(NetworkView<C> networkView) {
+            return new NetworkFinder<>(networkView);
         }
 
         class NetworkFinder<C> extends AbstractNetworkFinder<C> {
-            public NetworkFinder(NetworkCoverage<C> networkCoverage, Set<Station> stations, Set<Stop> stops) {
-                super(networkCoverage, stations, stops);
+            public NetworkFinder(NetworkView<C> networkView) {
+                super(networkView);
             }
 
             @Override
@@ -86,18 +85,22 @@ public interface NetworkFinderFactory<C> {
 
     @RequiredArgsConstructor
     abstract class AbstractNetworkFinder<C> implements NetworkFinder<C> {
-        private final NetworkCoverage<C> networkCoverage;
-        private final Set<Station> stations;
-        private final Set<Stop> stops;
+        private final NetworkView<C> networkView;
 
         @Override
         public Stream<Station> findAvailableStations(C coordinate) {
-            return stations.stream().filter(station -> networkCoverage.contains(station, coordinate));
+            return networkView.getStations().stream().filter(station -> {
+                NetworkCoverage<C> networkCoverage = networkView.getNetworkCoverage();
+                return networkCoverage.contains(station, coordinate);
+            });
         }
 
         @Override
         public Stream<Stop> findAvailableStops(C coordinate) {
-            return stops.stream().filter(stop -> networkCoverage.contains(stop, coordinate));
+            return networkView.getStops().stream().filter(stop -> {
+                NetworkCoverage<C> networkCoverage = networkView.getNetworkCoverage();
+                return networkCoverage.contains(stop, coordinate);
+            });
         }
     }
 }

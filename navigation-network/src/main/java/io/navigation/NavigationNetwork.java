@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  */
 @Immutable
 @ImmutableNavigationNetworkStyle
-public interface NavigationNetwork<C> {
+public interface NavigationNetwork<C> extends NetworkView<C> {
     static <C> Builder<C> builder() {
         return ImmutableNavigationNetwork.builder();
     }
@@ -38,12 +38,12 @@ public interface NavigationNetwork<C> {
 
     @Derived
     default NetworkFinder<C> getNetworkFinder() {
-        return getNetworkFinderFactory().create(getNetworkInfo(), getNetworkCoverage(), getStations(), getStops());
+        return getNetworkFinderFactory().create(this);
     }
 
     @Derived
     default RouteFinder getRouteFinder() {
-        return getRouteFinderFactory().create(getNetworkInfo(), getStations(), getStops());
+        return getRouteFinderFactory().create(this);
     }
 
     default Optional<Station> findPreferredStation(@NonNull C coordinate) {

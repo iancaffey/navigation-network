@@ -22,8 +22,10 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
         return ImmutableNavigationNetwork.builder();
     }
 
+    @Override
     NetworkInfo getNetworkInfo();
 
+    @Override
     NetworkCoverage<C> getNetworkCoverage();
 
     @Auxiliary
@@ -32,8 +34,10 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
     @Auxiliary
     RouteFinderFactory getRouteFinderFactory();
 
+    @Override
     Set<Station> getStations();
 
+    @Override
     Set<Stop> getStops();
 
     @Derived

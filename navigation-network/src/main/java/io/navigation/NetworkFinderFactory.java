@@ -90,13 +90,13 @@ public interface NetworkFinderFactory<C> {
         @Override
         public Stream<Station> findAvailableStations(C coordinate) {
             NetworkCoverage<C> networkCoverage = networkView.getNetworkCoverage();
-            return networkView.getStations().stream().filter(station -> networkCoverage.contains(station, coordinate));
+            return networkView.getStations().stream().filter(station -> networkCoverage.withinRange(station, coordinate));
         }
 
         @Override
         public Stream<Stop> findAvailableStops(C coordinate) {
             NetworkCoverage<C> networkCoverage = networkView.getNetworkCoverage();
-            return networkView.getStops().stream().filter(stop -> networkCoverage.contains(stop, coordinate));
+            return networkView.getStops().stream().filter(stop -> networkCoverage.withinRange(stop, coordinate));
         }
     }
 }

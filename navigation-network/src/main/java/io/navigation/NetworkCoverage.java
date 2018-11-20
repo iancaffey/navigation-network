@@ -20,13 +20,13 @@ public interface NetworkCoverage<C> {
 
     Map<String, ServiceArea<C>> getStopServiceAreas();
 
-    default boolean contains(Station station, C coordinate) {
+    default boolean withinRange(Station station, C coordinate) {
         String id = station.getId();
         Map<String, ServiceArea<C>> serviceAreas = getStationServiceAreas();
         return serviceAreas.containsKey(id) && serviceAreas.get(id).contains(coordinate);
     }
 
-    default boolean contains(Stop stop, C coordinate) {
+    default boolean withinRange(Stop stop, C coordinate) {
         String id = stop.getId();
         Map<String, ServiceArea<C>> serviceAreas = getStopServiceAreas();
         return serviceAreas.containsKey(id) && serviceAreas.get(id).contains(coordinate);

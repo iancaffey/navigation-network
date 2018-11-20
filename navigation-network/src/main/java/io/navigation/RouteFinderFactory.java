@@ -2,7 +2,6 @@ package io.navigation;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +12,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * @author Ian Caffey
@@ -108,7 +108,9 @@ public interface RouteFinderFactory {
                     station -> station.getDestinations().stream().collect(ImmutableMap.toImmutableMap(
                             option -> stopsById.get(option.getDestination()),
                             ImmutableSet::of,
-                            Sets::intersection
+                            (left, right) -> Stream.of(left, right)
+                                    .flatMap(Set::stream)
+                                    .collect(ImmutableSet.toImmutableSet())
                     ))
             ));
             return new RouteFinder(networkView.getNetworkInfo(), directRouteOptions);
@@ -129,7 +131,8 @@ public interface RouteFinderFactory {
                 if (directRouteOptions == null) {
                     return Optional.empty();
                 }
-                RouteOption shortestRouteOption = directRouteOptions.stream().min(Comparator.comparingDouble(RouteOption::getFare))
+                RouteOption shortestRouteOption = directRouteOptions.stream()
+                        .min(Comparator.comparingDouble(RouteOption::getFare))
                         .orElseThrow(() -> new IllegalArgumentException("Unable to find valid route option out of direct routes to " + stop + "."));
                 return Optional.of(Route.builder()
                         .setRouteInfo(RouteInfo.of(networkInfo, Instant.now(), shortestRouteOption.getFare()))

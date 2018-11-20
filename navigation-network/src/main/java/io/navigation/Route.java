@@ -1,6 +1,7 @@
 package io.navigation;
 
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
+import org.immutables.gson.Gson;
 import org.immutables.value.Value.Auxiliary;
 import org.immutables.value.Value.Immutable;
 
@@ -11,6 +12,7 @@ import java.util.List;
  * @since 1.0
  */
 @Immutable
+@Gson.TypeAdapters
 @ImmutableNavigationNetworkStyle
 public interface Route {
     static Builder builder() {

@@ -1,6 +1,7 @@
 package io.navigation;
 
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
+import org.immutables.gson.Gson;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Set;
@@ -10,6 +11,7 @@ import java.util.Set;
  * @since 1.0
  */
 @Immutable
+@Gson.TypeAdapters
 @ImmutableNavigationNetworkStyle
 public interface Station extends NetworkNode {
     static Builder builder() {

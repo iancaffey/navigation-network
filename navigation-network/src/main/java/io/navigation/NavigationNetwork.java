@@ -23,6 +23,7 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
     }
 
     @Override
+    @Auxiliary
     NetworkInfo getNetworkInfo();
 
     @Override

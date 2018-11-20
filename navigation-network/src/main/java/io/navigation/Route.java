@@ -1,6 +1,7 @@
 package io.navigation;
 
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
+import org.immutables.value.Value.Auxiliary;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public interface Route {
         return ImmutableRoute.of(routeInfo, station, connections, stop);
     }
 
+    @Auxiliary
     RouteInfo getRouteInfo();
 
     Station getStation();

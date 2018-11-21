@@ -2,7 +2,7 @@ package io.navigation;
 
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
 import org.immutables.gson.Gson;
-import org.immutables.value.Value;
+import org.immutables.value.Value.Immutable;
 
 import java.util.Set;
 
@@ -10,7 +10,7 @@ import java.util.Set;
  * @author Ian Caffey
  * @since 1.0
  */
-@Value.Immutable
+@Immutable
 @Gson.TypeAdapters
 @ImmutableNavigationNetworkStyle
 public interface NetworkGraph {

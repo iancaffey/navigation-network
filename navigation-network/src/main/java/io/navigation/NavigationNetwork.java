@@ -29,17 +29,14 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
     @Override
     NetworkCoverage<C> getNetworkCoverage();
 
+    @Override
+    NetworkGraph getNetworkGraph();
+
     @Auxiliary
     NetworkFinderFactory<C> getNetworkFinderFactory();
 
     @Auxiliary
     RouteFinderFactory getRouteFinderFactory();
-
-    @Override
-    Set<Station> getStations();
-
-    @Override
-    Set<Stop> getStops();
 
     @Derived
     default NetworkFinder<C> getNetworkFinder() {
@@ -48,7 +45,7 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
 
     @Derived
     default RouteFinder getRouteFinder() {
-        return getRouteFinderFactory().create(this);
+        return getRouteFinderFactory().create(getNetworkGraph());
     }
 
     default Optional<Station> findPreferredStation(@NonNull C coordinate) {
@@ -97,25 +94,11 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
 
         Builder<C> setNetworkCoverage(NetworkCoverage<C> networkCoverage);
 
+        Builder<C> setNetworkGraph(NetworkGraph networkGraph);
+
         Builder<C> setNetworkFinderFactory(NetworkFinderFactory<C> networkFinderFactory);
 
         Builder<C> setRouteFinderFactory(RouteFinderFactory routeFinderFactory);
-
-        Builder<C> addStation(Station station);
-
-        Builder<C> addStations(Station... stations);
-
-        Builder<C> addAllStations(Iterable<? extends Station> stations);
-
-        Builder<C> setStations(Iterable<? extends Station> stations);
-
-        Builder<C> addStop(Stop stop);
-
-        Builder<C> addStops(Stop... stops);
-
-        Builder<C> addAllStops(Iterable<? extends Stop> stops);
-
-        Builder<C> setStops(Iterable<? extends Stop> stops);
 
         NavigationNetwork<C> build();
     }

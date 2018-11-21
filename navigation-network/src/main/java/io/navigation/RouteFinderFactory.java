@@ -71,7 +71,7 @@ public interface RouteFinderFactory {
         return ImmutableRouteFinderFactory.FirstOption.of(routeFinderFactories);
     }
 
-    RouteFinder create(NetworkGraphView networkGraphView);
+    RouteFinder create(NetworkGraph networkGraph);
 
     @Immutable
     interface Cached extends RouteFinderFactory {
@@ -82,8 +82,8 @@ public interface RouteFinderFactory {
         TimeUnit getTimeUnit();
 
         @Override
-        default RouteFinder create(NetworkGraphView networkGraphView) {
-            io.navigation.RouteFinder delegate = getRouteFinderFactory().create(networkGraphView);
+        default RouteFinder create(NetworkGraph networkGraph) {
+            io.navigation.RouteFinder delegate = getRouteFinderFactory().create(networkGraph);
             return new RouteFinder(delegate, getTimeUnit().toMillis(getTimeToLive()));
         }
 
@@ -127,9 +127,9 @@ public interface RouteFinderFactory {
     @Immutable
     interface Direct extends RouteFinderFactory {
         @Override
-        default RouteFinder create(NetworkGraphView networkGraphView) {
-            Map<String, Stop> stopsById = networkGraphView.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-            Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions = networkGraphView.getStations().stream().collect(ImmutableMap.toImmutableMap(
+        default RouteFinder create(NetworkGraph networkGraph) {
+            Map<String, Stop> stopsById = networkGraph.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+            Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions = networkGraph.getStations().stream().collect(ImmutableMap.toImmutableMap(
                     Function.identity(),
                     station -> station.getDestinations().stream().collect(ImmutableMap.toImmutableMap(
                             option -> stopsById.get(option.getDestination()),
@@ -139,12 +139,11 @@ public interface RouteFinderFactory {
                                     .collect(ImmutableSet.toImmutableSet())
                     ))
             ));
-            return new RouteFinder(networkGraphView.getNetworkInfo(), directRouteOptions);
+            return new RouteFinder(directRouteOptions);
         }
 
         @RequiredArgsConstructor
         class RouteFinder implements io.navigation.RouteFinder {
-            private final NetworkInfo networkInfo;
             private final Map<Station, Map<Stop, Set<RouteOption>>> directRouteOptions;
 
             @Override
@@ -161,7 +160,7 @@ public interface RouteFinderFactory {
                         .min(Comparator.comparingDouble(RouteOption::getFare))
                         .orElseThrow(() -> new IllegalArgumentException("Unable to find valid route option out of direct routes to " + stop + "."));
                 return Optional.of(Route.builder()
-                        .setRouteInfo(RouteInfo.of(networkInfo, Instant.now(), shortestRouteOption.getFare()))
+                        .setRouteInfo(RouteInfo.of(Instant.now(), shortestRouteOption.getFare()))
                         .setStation(station)
                         .setStop(stop)
                         .build());
@@ -177,15 +176,14 @@ public interface RouteFinderFactory {
     @Immutable
     interface Dijkstra extends RouteFinderFactory {
         @Override
-        default RouteFinder create(NetworkGraphView networkGraphView) {
-            Map<String, Station> stationsById = networkGraphView.getStations().stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
-            Map<String, Stop> stopsById = networkGraphView.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-            return new RouteFinder(networkGraphView.getNetworkInfo(), stationsById, stopsById);
+        default RouteFinder create(NetworkGraph networkGraph) {
+            Map<String, Station> stationsById = networkGraph.getStations().stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
+            Map<String, Stop> stopsById = networkGraph.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
+            return new RouteFinder(stationsById, stopsById);
         }
 
         @RequiredArgsConstructor
         class RouteFinder implements io.navigation.RouteFinder {
-            private final NetworkInfo networkInfo;
             private final Map<String, Station> stationsById;
             private final Map<String, Stop> stopsById;
 
@@ -207,9 +205,9 @@ public interface RouteFinderFactory {
         Set<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
-        default RouteFinder create(NetworkGraphView networkGraphView) {
+        default RouteFinder create(NetworkGraph networkGraph) {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
-                    .map(factory -> factory.create(networkGraphView))
+                    .map(factory -> factory.create(networkGraph))
                     .collect(ImmutableSet.toImmutableSet());
             return new RouteMultiFinder("MinimumFare", routeFinders,
                     routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare())),
@@ -223,9 +221,9 @@ public interface RouteFinderFactory {
         Set<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
-        default RouteFinder create(NetworkGraphView networkGraphView) {
+        default RouteFinder create(NetworkGraph networkGraph) {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
-                    .map(factory -> factory.create(networkGraphView))
+                    .map(factory -> factory.create(networkGraph))
                     .collect(ImmutableSet.toImmutableSet());
             return new RouteMultiFinder("QuickSelect", routeFinders, Stream::findAny, true);
         }
@@ -236,9 +234,9 @@ public interface RouteFinderFactory {
         List<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
-        default RouteFinder create(NetworkGraphView networkGraphView) {
+        default RouteFinder create(NetworkGraph networkGraph) {
             List<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
-                    .map(factory -> factory.create(networkGraphView))
+                    .map(factory -> factory.create(networkGraph))
                     .collect(ImmutableList.toImmutableList());
             return new RouteMultiFinder("FirstOption", routeFinders, Stream::findFirst, false);
         }

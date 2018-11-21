@@ -18,19 +18,15 @@ public interface RouteInfo {
         return ImmutableRouteInfo.builder();
     }
 
-    static RouteInfo of(NetworkInfo networkInfo, Instant creationTime, double fare) {
-        return ImmutableRouteInfo.of(networkInfo, creationTime, fare);
+    static RouteInfo of(Instant creationTime, double fare) {
+        return ImmutableRouteInfo.of(creationTime, fare);
     }
-
-    NetworkInfo getNetworkInfo();
 
     Instant getCreationTime();
 
     double getFare();
 
     interface Builder {
-        Builder setNetworkInfo(NetworkInfo networkInfo);
-
         Builder setCreationTime(Instant creationTime);
 
         Builder setFare(double fare);

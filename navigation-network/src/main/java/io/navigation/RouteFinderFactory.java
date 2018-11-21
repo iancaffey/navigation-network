@@ -79,7 +79,7 @@ public interface RouteFinderFactory {
 
         @RequiredArgsConstructor
         class RouteFinder implements io.navigation.RouteFinder {
-            private final Map<CacheKey, Route> routes = new ConcurrentHashMap<>(); //storing an Optional/long pair would allow caching empty responses from the delegate
+            private final Map<CacheKey, Route> routes = new ConcurrentHashMap<>();
             private final io.navigation.RouteFinder delegate;
             private final long timeToLive;
 
@@ -98,7 +98,7 @@ public interface RouteFinderFactory {
 
             @Override
             public String toString() {
-                return "Cached{" + delegate + "}";
+                return "Cached{delegate=" + delegate + ", ttl=" + timeToLive + "ms}";
             }
 
             @Immutable

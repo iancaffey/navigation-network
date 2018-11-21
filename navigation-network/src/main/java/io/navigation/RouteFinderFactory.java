@@ -9,8 +9,12 @@ import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -45,16 +49,16 @@ public interface RouteFinderFactory {
         return ImmutableRouteFinderFactory.BestValue.of(routeFinderFactories);
     }
 
-    static Competing competing(Executor executor, RouteFinderFactory... routeFinderFactories) {
-        return ImmutableRouteFinderFactory.Competing.of(executor, ImmutableSet.copyOf(routeFinderFactories));
+    static Competing competing(RouteFinderFactory... routeFinderFactories) {
+        return ImmutableRouteFinderFactory.Competing.of(ImmutableSet.copyOf(routeFinderFactories));
     }
 
-    static Competing competing(Executor executor, Set<RouteFinderFactory> routeFinderFactories) {
-        return ImmutableRouteFinderFactory.Competing.of(executor, routeFinderFactories);
+    static Competing competing(Set<RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.Competing.of(routeFinderFactories);
     }
 
-    static Competing competing(Executor executor, Iterable<? extends RouteFinderFactory> routeFinderFactories) {
-        return ImmutableRouteFinderFactory.Competing.of(executor, routeFinderFactories);
+    static Competing competing(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.Competing.of(routeFinderFactories);
     }
 
     RouteFinder create(NetworkView<?> networkView);
@@ -197,33 +201,14 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteFinder(routeFinders);
-        }
-
-        @RequiredArgsConstructor
-        class RouteFinder implements io.navigation.RouteFinder {
-            private final Set<io.navigation.RouteFinder> routeFinders;
-
-            @Override
-            public Optional<Route> findRoute(Station station, Stop stop) {
-                return routeFinders.parallelStream()
-                        .map(routeFinder -> routeFinder.findRoute(station, stop))
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare()));
-            }
-
-            @Override
-            public String toString() {
-                return "BestValue" + routeFinders;
-            }
+            return new RouteMultiFinder("BestValue", routeFinders,
+                    routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare()))
+            );
         }
     }
 
     @Immutable
     interface Competing extends RouteFinderFactory {
-        Executor getExecutor();
-
         Set<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
@@ -231,46 +216,28 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteFinder(getExecutor(), routeFinders);
+            return new RouteMultiFinder("Competing", routeFinders, Stream::findAny);
+        }
+    }
+
+    @RequiredArgsConstructor
+    class RouteMultiFinder implements RouteFinder {
+        private final String name;
+        private final Set<RouteFinder> routeFinders;
+        private final Function<Stream<Route>, Optional<Route>> routeSelector;
+
+        @Override
+        public Optional<Route> findRoute(Station station, Stop stop) {
+            Stream<Route> validOptions = routeFinders.parallelStream()
+                    .map(routeFinder -> routeFinder.findRoute(station, stop))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get);
+            return routeSelector.apply(validOptions);
         }
 
-        @RequiredArgsConstructor
-        class RouteFinder implements io.navigation.RouteFinder {
-            private final Executor executor;
-            private final Set<io.navigation.RouteFinder> routeFinders;
-
-            @Override
-            public Optional<Route> findRoute(Station station, Stop stop) {
-                int routeFinderCount = routeFinders.size();
-                List<Future<Optional<Route>>> workers = new ArrayList<>(routeFinderCount);
-                CompletionService<Optional<Route>> completionService = new ExecutorCompletionService<>(executor);
-                Optional<Route> route = Optional.empty();
-                try {
-                    routeFinders.forEach(routeFinder -> workers.add(completionService.submit(() -> routeFinder.findRoute(station, stop))));
-                    //try up to routeFinderCount times to take a valid result from the service, otherwise assume no route possible
-                    for (int i = 0; i < routeFinderCount; ++i) {
-                        try {
-                            Future<Optional<Route>> nextCompletedTask = completionService.take();
-                            Optional<Route> result = nextCompletedTask.get();
-                            if (result != null && result.isPresent()) {
-                                route = result;
-                                break;
-                            }
-                        } catch (ExecutionException | InterruptedException ignored) {
-                            //ignore any exception from worker route finders (or while waiting) to give the next route finder a chance to return a valid route
-                        }
-                    }
-                } finally {
-                    //cleanup any remaining active workers
-                    workers.parallelStream().forEach(worker -> worker.cancel(true));
-                }
-                return route;
-            }
-
-            @Override
-            public String toString() {
-                return "Competing" + routeFinders;
-            }
+        @Override
+        public String toString() {
+            return name + routeFinders;
         }
     }
 }

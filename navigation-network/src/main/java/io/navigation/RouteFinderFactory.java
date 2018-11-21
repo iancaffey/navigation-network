@@ -153,7 +153,7 @@ public interface RouteFinderFactory {
                     throw new IllegalArgumentException("Unable to find direct routes from " + station + ".");
                 }
                 Set<RouteOption> directRouteOptions = directRoutesFromStation.get(stop);
-                if (directRouteOptions == null) {
+                if (directRouteOptions == null || directRouteOptions.isEmpty()) {
                     return Optional.empty();
                 }
                 RouteOption shortestRouteOption = directRouteOptions.stream()

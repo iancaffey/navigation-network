@@ -89,14 +89,16 @@ public interface NetworkFinderFactory<C> {
 
         @Override
         public Stream<Station> findAvailableStations(C coordinate) {
+            NetworkGraph networkGraph = networkView.getNetworkGraph();
             NetworkCoverage<C> networkCoverage = networkView.getNetworkCoverage();
-            return networkView.getStations().stream().filter(station -> networkCoverage.withinRange(station, coordinate));
+            return networkGraph.getStations().stream().filter(station -> networkCoverage.withinRange(station, coordinate));
         }
 
         @Override
         public Stream<Stop> findAvailableStops(C coordinate) {
+            NetworkGraph networkGraph = networkView.getNetworkGraph();
             NetworkCoverage<C> networkCoverage = networkView.getNetworkCoverage();
-            return networkView.getStops().stream().filter(stop -> networkCoverage.withinRange(stop, coordinate));
+            return networkGraph.getStops().stream().filter(stop -> networkCoverage.withinRange(stop, coordinate));
         }
     }
 }

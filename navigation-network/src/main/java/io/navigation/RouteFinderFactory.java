@@ -1,5 +1,6 @@
 package io.navigation;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
@@ -9,10 +10,7 @@ import org.immutables.value.Value.Enclosing;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -59,6 +57,18 @@ public interface RouteFinderFactory {
 
     static QuickSelect quickSelect(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
         return ImmutableRouteFinderFactory.QuickSelect.of(routeFinderFactories);
+    }
+
+    static FirstOption firstOption(RouteFinderFactory... routeFinderFactories) {
+        return ImmutableRouteFinderFactory.FirstOption.of(ImmutableList.copyOf(routeFinderFactories));
+    }
+
+    static FirstOption firstOption(List<RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.FirstOption.of(routeFinderFactories);
+    }
+
+    static FirstOption firstOption(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.FirstOption.of(routeFinderFactories);
     }
 
     RouteFinder create(NetworkView<?> networkView);
@@ -202,7 +212,8 @@ public interface RouteFinderFactory {
                     .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
             return new RouteMultiFinder("MinimumFare", routeFinders,
-                    routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare()))
+                    routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare())),
+                    true
             );
         }
     }
@@ -216,19 +227,33 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteMultiFinder("QuickSelect", routeFinders, Stream::findAny);
+            return new RouteMultiFinder("QuickSelect", routeFinders, Stream::findAny, true);
+        }
+    }
+
+    @Immutable
+    interface FirstOption extends RouteFinderFactory {
+        List<RouteFinderFactory> getRouteFinderFactories();
+
+        @Override
+        default RouteFinder create(NetworkView<?> networkView) {
+            List<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
+                    .map(factory -> factory.create(networkView))
+                    .collect(ImmutableList.toImmutableList());
+            return new RouteMultiFinder("FirstOption", routeFinders, Stream::findFirst, false);
         }
     }
 
     @RequiredArgsConstructor
     class RouteMultiFinder implements RouteFinder {
         private final String name;
-        private final Set<RouteFinder> routeFinders;
+        private final Collection<RouteFinder> routeFinders;
         private final Function<Stream<Route>, Optional<Route>> routeSelector;
+        private final boolean parallel;
 
         @Override
         public Optional<Route> findRoute(Station station, Stop stop) {
-            Stream<Route> validOptions = routeFinders.parallelStream()
+            Stream<Route> validOptions = (parallel ? routeFinders.parallelStream() : routeFinders.stream())
                     .map(routeFinder -> routeFinder.findRoute(station, stop))
                     .filter(Optional::isPresent)
                     .map(Optional::get);

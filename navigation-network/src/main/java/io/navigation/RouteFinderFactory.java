@@ -37,28 +37,28 @@ public interface RouteFinderFactory {
         return ImmutableRouteFinderFactory.Dijkstra.of();
     }
 
-    static BestValue bestValue(RouteFinderFactory... routeFinderFactories) {
-        return ImmutableRouteFinderFactory.BestValue.of(ImmutableSet.copyOf(routeFinderFactories));
+    static MinimumFare minimumFare(RouteFinderFactory... routeFinderFactories) {
+        return ImmutableRouteFinderFactory.MinimumFare.of(ImmutableSet.copyOf(routeFinderFactories));
     }
 
-    static BestValue bestValue(Set<RouteFinderFactory> routeFinderFactories) {
-        return ImmutableRouteFinderFactory.BestValue.of(routeFinderFactories);
+    static MinimumFare minimumFare(Set<RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.MinimumFare.of(routeFinderFactories);
     }
 
-    static BestValue bestValue(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
-        return ImmutableRouteFinderFactory.BestValue.of(routeFinderFactories);
+    static MinimumFare minimumFare(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.MinimumFare.of(routeFinderFactories);
     }
 
-    static Competing competing(RouteFinderFactory... routeFinderFactories) {
-        return ImmutableRouteFinderFactory.Competing.of(ImmutableSet.copyOf(routeFinderFactories));
+    static QuickSelect quickSelect(RouteFinderFactory... routeFinderFactories) {
+        return ImmutableRouteFinderFactory.QuickSelect.of(ImmutableSet.copyOf(routeFinderFactories));
     }
 
-    static Competing competing(Set<RouteFinderFactory> routeFinderFactories) {
-        return ImmutableRouteFinderFactory.Competing.of(routeFinderFactories);
+    static QuickSelect quickSelect(Set<RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.QuickSelect.of(routeFinderFactories);
     }
 
-    static Competing competing(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
-        return ImmutableRouteFinderFactory.Competing.of(routeFinderFactories);
+    static QuickSelect quickSelect(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.QuickSelect.of(routeFinderFactories);
     }
 
     RouteFinder create(NetworkView<?> networkView);
@@ -193,7 +193,7 @@ public interface RouteFinderFactory {
     }
 
     @Immutable
-    interface BestValue extends RouteFinderFactory {
+    interface MinimumFare extends RouteFinderFactory {
         Set<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
@@ -201,14 +201,14 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteMultiFinder("BestValue", routeFinders,
+            return new RouteMultiFinder("MinimumFare", routeFinders,
                     routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare()))
             );
         }
     }
 
     @Immutable
-    interface Competing extends RouteFinderFactory {
+    interface QuickSelect extends RouteFinderFactory {
         Set<RouteFinderFactory> getRouteFinderFactories();
 
         @Override
@@ -216,7 +216,7 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkView))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteMultiFinder("Competing", routeFinders, Stream::findAny);
+            return new RouteMultiFinder("QuickSelect", routeFinders, Stream::findAny);
         }
     }
 

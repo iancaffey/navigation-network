@@ -33,6 +33,18 @@ public interface RouteFinderFactory {
         return ImmutableRouteFinderFactory.Dijkstra.of();
     }
 
+    static BestValue bestValue(RouteFinderFactory... routeFinderFactories) {
+        return ImmutableRouteFinderFactory.BestValue.of(ImmutableSet.copyOf(routeFinderFactories));
+    }
+
+    static BestValue bestValue(Set<RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.BestValue.of(routeFinderFactories);
+    }
+
+    static BestValue bestValue(Iterable<? extends RouteFinderFactory> routeFinderFactories) {
+        return ImmutableRouteFinderFactory.BestValue.of(routeFinderFactories);
+    }
+
     static Competing competing(Executor executor, RouteFinderFactory... routeFinderFactories) {
         return ImmutableRouteFinderFactory.Competing.of(executor, ImmutableSet.copyOf(routeFinderFactories));
     }
@@ -172,6 +184,38 @@ public interface RouteFinderFactory {
             @Override
             public String toString() {
                 return "Dijkstra";
+            }
+        }
+    }
+
+    @Immutable
+    interface BestValue extends RouteFinderFactory {
+        Set<RouteFinderFactory> getRouteFinderFactories();
+
+        @Override
+        default RouteFinder create(NetworkView<?> networkView) {
+            Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
+                    .map(factory -> factory.create(networkView))
+                    .collect(ImmutableSet.toImmutableSet());
+            return new RouteFinder(routeFinders);
+        }
+
+        @RequiredArgsConstructor
+        class RouteFinder implements io.navigation.RouteFinder {
+            private final Set<io.navigation.RouteFinder> routeFinders;
+
+            @Override
+            public Optional<Route> findRoute(Station station, Stop stop) {
+                return routeFinders.parallelStream()
+                        .map(routeFinder -> routeFinder.findRoute(station, stop))
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare()));
+            }
+
+            @Override
+            public String toString() {
+                return "BestValue" + routeFinders;
             }
         }
     }

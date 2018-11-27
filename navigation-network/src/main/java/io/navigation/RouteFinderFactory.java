@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.navigation.immutables.ImmutableNavigationNetworkStyle;
+import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.immutables.value.Value.Enclosing;
@@ -288,9 +289,8 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkGraph))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteMultiFinder("MinimumFare", routeFinders,
-                    routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare())),
-                    true
+            return RouteMultiFinder.parallel("MinimumFare", routeFinders,
+                    routes -> routes.min(Comparator.comparingDouble(route -> route.getRouteInfo().getFare()))
             );
         }
     }
@@ -304,7 +304,7 @@ public interface RouteFinderFactory {
             Set<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkGraph))
                     .collect(ImmutableSet.toImmutableSet());
-            return new RouteMultiFinder("QuickSelect", routeFinders, Stream::findAny, true);
+            return RouteMultiFinder.parallel("QuickSelect", routeFinders, Stream::findAny);
         }
     }
 
@@ -317,16 +317,24 @@ public interface RouteFinderFactory {
             List<io.navigation.RouteFinder> routeFinders = getRouteFinderFactories().stream()
                     .map(factory -> factory.create(networkGraph))
                     .collect(ImmutableList.toImmutableList());
-            return new RouteMultiFinder("FirstOption", routeFinders, Stream::findFirst, false);
+            return RouteMultiFinder.sequential("FirstOption", routeFinders, Stream::findFirst);
         }
     }
 
-    @RequiredArgsConstructor
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     class RouteMultiFinder implements RouteFinder {
         private final String name;
         private final Collection<RouteFinder> routeFinders;
         private final Function<Stream<Route>, Optional<Route>> routeSelector;
         private final boolean parallel;
+
+        static RouteMultiFinder sequential(String name, Collection<RouteFinder> routeFinders, Function<Stream<Route>, Optional<Route>> routeSelector) {
+            return new RouteMultiFinder(name, routeFinders, routeSelector, false);
+        }
+
+        static RouteMultiFinder parallel(String name, Collection<RouteFinder> routeFinders, Function<Stream<Route>, Optional<Route>> routeSelector) {
+            return new RouteMultiFinder(name, routeFinders, routeSelector, true);
+        }
 
         @Override
         public Optional<Route> findRoute(Station station, Stop stop) {

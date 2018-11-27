@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -178,19 +179,97 @@ public interface RouteFinderFactory {
         @Override
         default RouteFinder create(NetworkGraph networkGraph) {
             Map<String, Station> stationsById = networkGraph.getStations().stream().collect(ImmutableMap.toImmutableMap(Station::getId, Function.identity()));
-            Map<String, Stop> stopsById = networkGraph.getStops().stream().collect(ImmutableMap.toImmutableMap(Stop::getId, Function.identity()));
-            return new RouteFinder(stationsById, stopsById);
+            Map<String, Map<String, Double>> minimumCostForDirectRoutes = new HashMap<>();
+            networkGraph.getStations().forEach(station ->
+                    station.getDestinations().forEach(routeOption -> {
+                        double fare = routeOption.getFare();
+                        Map<String, Double> minimumCosts = minimumCostForDirectRoutes.computeIfAbsent(routeOption.getDestination(), stop -> new HashMap<>());
+                        Double existingMinimumCost = minimumCosts.get(station.getId());
+                        if (existingMinimumCost == null || existingMinimumCost > fare) {
+                            minimumCosts.put(station.getId(), fare);
+                        }
+                    })
+            );
+            return new RouteFinder(stationsById, minimumCostForDirectRoutes);
         }
 
         @RequiredArgsConstructor
         class RouteFinder implements io.navigation.RouteFinder {
             private final Map<String, Station> stationsById;
-            private final Map<String, Stop> stopsById;
+            private final Map<String, Map<String, Double>> minimumCostForDirectRoutes;
 
             @Override
             public Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {
-                //TODO: Do regular Dijkstra's across the Station network to find route with minimum fare to the stop
-                return Optional.empty();
+                if (stationsById.isEmpty()) {
+                    return Optional.empty();
+                }
+                Map<String, Double> directRouteCosts = minimumCostForDirectRoutes.get(stop.getId());
+                if (directRouteCosts == null) {
+                    throw new IllegalArgumentException();
+                }
+                //Calculate all the shortest paths to other stations from the specified station
+                Set<String> visited = new HashSet<>();
+                Map<String, String> parents = new HashMap<>();
+                Map<String, Double> fares = new HashMap<>();
+                fares.put(station.getId(), 0.0);
+                Deque<Station> queue = new LinkedList<>();
+                queue.push(station);
+                while (!queue.isEmpty()) {
+                    Station current = queue.poll();
+                    Double currentFare = fares.get(current.getId());
+                    if (currentFare == null) {
+                        throw new IllegalStateException("Unable to find fare for " + current + " when finding route.");
+                    }
+                    current.getConnections().forEach(connection -> {
+                        Station connectingStation = stationsById.get(connection.getDestination());
+                        if (connectingStation == null) {
+                            throw new IllegalStateException("Found connection for " + station + " that leads outside the network.");
+                        }
+                        double newFareToConnection = currentFare + connection.getFare();
+                        Double previousFareToConnection = fares.get(connectingStation.getId());
+                        if (previousFareToConnection == null || previousFareToConnection > newFareToConnection) {
+                            fares.put(connectingStation.getId(), newFareToConnection);
+                            parents.put(connectingStation.getId(), current.getId());
+                        }
+                        //only add the destination to be processed if it hasn't been seen yet
+                        if (visited.contains(connection.getDestination())) {
+                            return;
+                        }
+                        queue.push(connectingStation);
+                    });
+                    visited.add(current.getId());
+                }
+                //Calculate the true minimum route which takes into account the cost of the last leg (station -> stop)
+                AtomicReference<String> minimum = new AtomicReference<>();
+                AtomicReference<Double> minimumFare = new AtomicReference<>(Double.MAX_VALUE);
+                directRouteCosts.forEach((parent, cost) -> {
+                    Double fareToParent = fares.get(parent);
+                    if (fareToParent == null) {
+                        throw new IllegalArgumentException("Unable to find the minimum fare to " + parent + ".");
+                    }
+                    Double existingMinimum = minimumFare.get();
+                    double costToStop = fareToParent + cost;
+                    if (existingMinimum == null || existingMinimum > costToStop) {
+                        minimum.set(parent);
+                        minimumFare.set(costToStop);
+                    }
+                });
+                //Add the connections in reverse order (we trace the shortest path back by each leg from the last station)
+                List<String> inverseConnections = new ArrayList<>();
+                String lastLeg = minimum.get();
+                while (lastLeg != null && !lastLeg.equals(station.getId())) {
+                    inverseConnections.add(lastLeg);
+                    lastLeg = parents.get(lastLeg);
+                }
+                double routeCost = minimumFare.get();
+                Route.Builder builder = Route.builder()
+                        .setRouteInfo(RouteInfo.of(Instant.now(), routeCost))
+                        .setStation(station.getId())
+                        .setStop(stop.getId());
+                for (int i = inverseConnections.size() - 1; i >= 0; --i) {
+                    builder.addConnection(inverseConnections.get(i));
+                }
+                return Optional.of(builder.build());
             }
 
             @Override

@@ -248,7 +248,7 @@ public interface RouteFinderFactory {
                     visited.add(current.getId());
                 }
                 //Calculate the true minimum route which takes into account the cost of the last leg (station -> stop)
-                AtomicReference<String> minimum = new AtomicReference<>();
+                AtomicReference<String> minimumLastLeg = new AtomicReference<>();
                 AtomicReference<Double> minimumFare = new AtomicReference<>(Double.MAX_VALUE);
                 directRouteCosts.forEach((parent, cost) -> {
                     Double fareToParent = fares.get(parent);
@@ -258,16 +258,16 @@ public interface RouteFinderFactory {
                     Double existingMinimum = minimumFare.get();
                     double costToStop = fareToParent + cost;
                     if (existingMinimum == null || existingMinimum > costToStop) {
-                        minimum.set(parent);
+                        minimumLastLeg.set(parent);
                         minimumFare.set(costToStop);
                     }
                 });
                 //Add the connections in reverse order (we trace the shortest path back by each leg from the last station)
                 List<String> inverseConnections = new ArrayList<>();
-                String lastLeg = minimum.get();
-                while (lastLeg != null && !lastLeg.equals(station.getId())) {
-                    inverseConnections.add(lastLeg);
-                    lastLeg = parents.get(lastLeg);
+                String currentLeg = minimumLastLeg.get();
+                while (currentLeg != null && !currentLeg.equals(station.getId())) {
+                    inverseConnections.add(currentLeg);
+                    currentLeg = parents.get(currentLeg);
                 }
                 double routeCost = minimumFare.get();
                 Route.Builder builder = Route.builder()

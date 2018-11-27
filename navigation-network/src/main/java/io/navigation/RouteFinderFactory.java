@@ -150,6 +150,9 @@ public interface RouteFinderFactory {
 
             @Override
             public Optional<Route> findRoute(@NonNull Station station, @NonNull Stop stop) {
+                if (directRouteOptions.isEmpty()) {
+                    return Optional.empty();
+                }
                 Map<Stop, Set<RouteOption>> directRoutesFromStation = directRouteOptions.get(station);
                 if (directRoutesFromStation == null) {
                     throw new IllegalArgumentException("Unable to find direct routes from " + station + ".");
@@ -163,8 +166,8 @@ public interface RouteFinderFactory {
                         .orElseThrow(() -> new IllegalArgumentException("Unable to find valid route option out of direct routes to " + stop + "."));
                 return Optional.of(Route.builder()
                         .setRouteInfo(RouteInfo.of(Instant.now(), shortestRouteOption.getFare()))
-                        .setStation(station)
-                        .setStop(stop)
+                        .setStation(station.getId())
+                        .setStop(stop.getId())
                         .build());
             }
 

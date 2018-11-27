@@ -155,7 +155,7 @@ public interface RouteFinderFactory {
                 }
                 Map<Stop, Set<RouteOption>> directRoutesFromStation = directRouteOptions.get(station);
                 if (directRoutesFromStation == null) {
-                    throw new IllegalArgumentException("Unable to find direct routes from " + station + ".");
+                    throw new IllegalArgumentException("Unable to find direct routes from " + station.getId() + ".");
                 }
                 Set<RouteOption> directRouteOptions = directRoutesFromStation.get(stop);
                 if (directRouteOptions == null || directRouteOptions.isEmpty()) {
@@ -163,7 +163,7 @@ public interface RouteFinderFactory {
                 }
                 RouteOption shortestRouteOption = directRouteOptions.stream()
                         .min(Comparator.comparingDouble(RouteOption::getFare))
-                        .orElseThrow(() -> new IllegalArgumentException("Unable to find valid route option out of direct routes to " + stop + "."));
+                        .orElseThrow(() -> new IllegalArgumentException("Unable to find valid route option out of direct routes to " + stop.getId() + "."));
                 return Optional.of(Route.builder()
                         .setRouteInfo(RouteInfo.of(Instant.now(), shortestRouteOption.getFare()))
                         .setStation(station.getId())
@@ -209,7 +209,11 @@ public interface RouteFinderFactory {
                 }
                 Map<String, Double> directRouteCosts = minimumCostForDirectRoutes.get(stop.getId());
                 if (directRouteCosts == null) {
-                    throw new IllegalArgumentException();
+                    throw new IllegalStateException("Unable to find direct route costs for " + stop.getId() + " when finding route.");
+                }
+                //No direct route costs present, indicating the stop is not serviced by any station
+                if (directRouteCosts.isEmpty()) {
+                    return Optional.empty();
                 }
                 //Calculate all the shortest paths to other stations from the specified station
                 Set<String> visited = new HashSet<>();
@@ -222,12 +226,12 @@ public interface RouteFinderFactory {
                     Station current = queue.poll();
                     Double currentFare = fares.get(current.getId());
                     if (currentFare == null) {
-                        throw new IllegalStateException("Unable to find fare for " + current + " when finding route.");
+                        throw new IllegalStateException("Unable to find fare for " + current.getId() + " when finding a route.");
                     }
                     current.getConnections().forEach(connection -> {
                         Station connectingStation = stationsById.get(connection.getDestination());
                         if (connectingStation == null) {
-                            throw new IllegalStateException("Found connection for " + station + " that leads outside the network.");
+                            throw new IllegalStateException("Found connection for " + station.getId() + " that leads outside the network.");
                         }
                         double newFareToConnection = currentFare + connection.getFare();
                         Double previousFareToConnection = fares.get(connectingStation.getId());

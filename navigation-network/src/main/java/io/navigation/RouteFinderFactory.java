@@ -223,7 +223,7 @@ public interface RouteFinderFactory {
                 Deque<Station> queue = new LinkedList<>();
                 queue.push(station);
                 while (!queue.isEmpty()) {
-                    Station current = queue.poll();
+                    Station current = queue.removeFirst();
                     Double currentFare = fares.get(current.getId());
                     if (currentFare == null) {
                         throw new IllegalStateException("Unable to find fare for " + current.getId() + " when finding a route.");

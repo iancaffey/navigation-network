@@ -19,37 +19,37 @@ public interface Route {
         return ImmutableRoute.builder();
     }
 
-    static Route of(RouteInfo routeInfo, Station station, List<Station> connections, Stop stop) {
+    static Route of(RouteInfo routeInfo, String station, List<String> connections, String stop) {
         return ImmutableRoute.of(routeInfo, station, connections, stop);
     }
 
-    static Route of(RouteInfo routeInfo, Station station, Iterable<? extends Station> connections, Stop stop) {
+    static Route of(RouteInfo routeInfo, String station, Iterable<String> connections, String stop) {
         return ImmutableRoute.of(routeInfo, station, connections, stop);
     }
 
     @Auxiliary
     RouteInfo getRouteInfo();
 
-    Station getStation();
+    String getStation();
 
-    List<Station> getConnections();
+    List<String> getConnections();
 
-    Stop getStop();
+    String getStop();
 
     interface Builder {
         Builder setRouteInfo(RouteInfo routeInfo);
 
-        Builder setStation(Station station);
+        Builder setStation(String station);
 
-        Builder addConnection(Station station);
+        Builder addConnection(String station);
 
-        Builder addConnections(Station... stations);
+        Builder addConnections(String... stations);
 
-        Builder addAllConnections(Iterable<? extends Station> stations);
+        Builder addAllConnections(Iterable<String> stations);
 
-        Builder setConnections(Iterable<? extends Station> stations);
+        Builder setConnections(Iterable<String> stations);
 
-        Builder setStop(Stop stop);
+        Builder setStop(String stop);
 
         Route build();
     }

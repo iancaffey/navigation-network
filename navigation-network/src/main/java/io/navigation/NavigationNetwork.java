@@ -84,6 +84,7 @@ public interface NavigationNetwork<C> extends NetworkView<C> {
             throw new UnreachableStationException(destination, this);
         }
         return stations.parallelStream()
+                //mappers are always sequentially evaluated, so no use in using stops.parallelStream() as it'd be misleading
                 .flatMap(station -> stops.stream().map(stop -> findRoute(station, stop)))
                 .filter(Optional::isPresent)
                 .map(Optional::get);

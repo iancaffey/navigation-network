@@ -11,9 +11,9 @@ public class UnreachableCoordinateException extends RuntimeException {
     private final Object coordinate;
     private final NetworkInfo networkInfo;
 
-    public UnreachableCoordinateException(String message, Object coordinate, NavigationNetwork network) {
+    public UnreachableCoordinateException(String message, Object coordinate, NetworkInfo networkInfo) {
         super(message);
         this.coordinate = coordinate;
-        this.networkInfo = network.getNetworkInfo();
+        this.networkInfo = networkInfo;
     }
 }
